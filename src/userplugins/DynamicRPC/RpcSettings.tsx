@@ -173,7 +173,6 @@ function TextAreaSetting({ settingsKey, label, disabled }: TextAreaOption) {
                 onChange={e => handleChange(e.target.value)}
                 disabled={disabled}
                 rows={5}
-                style={{ width: "100%", resize: "vertical" }}
             />
         </div>
     );
@@ -217,10 +216,9 @@ export function RPCSettings() {
                 { settingsKey: "appName", label: "Application Name", isValid: makeValidator(128, true) },
             ]} />
 
-            <PairSetting data={[
-                { settingsKey: "details", label: "Detail (line 1)", isValid: maxLength128 },
-                { settingsKey: "detailsURL", label: "Detail URL", isValid: isUrlValid },
-            ]} />
+            <SingleSetting settingsKey="details" label="Detail (line 1)" isValid={maxLength128} />
+            <TextAreaSetting settingsKey="detailsRandomLines" label="Random Detail Lines (one per line)" />
+            <SingleSetting settingsKey="detailsURL" label="Detail URL" isValid={isUrlValid} />
 
             <SingleSetting settingsKey="state" label="State (line 2)" isValid={maxLength128} />
             <TextAreaSetting settingsKey="stateRandomLines" label="Random State Lines (one per line)" />

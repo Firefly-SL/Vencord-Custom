@@ -60,6 +60,7 @@ export const settings = definePluginSettings({
     appID?: string;
     appName?: string;
     details?: string;
+    detailsRandomLines?: string;
     detailsURL?: string;
     state?: string;
     stateRandomLines?: string;
@@ -87,6 +88,7 @@ async function createActivity(): Promise<Activity | undefined> {
         appID,
         appName,
         details,
+        detailsRandomLines,
         detailsURL,
         state,
         stateURL,
@@ -112,9 +114,17 @@ async function createActivity(): Promise<Activity | undefined> {
 
     if (!appName) return;
 
+    let finalDetails = details;
+    if (detailsRandomLines) {
+        const lines = detailsRandomLines.split("\n").filter(line => line.trim() !== '');
+        if (lines.length > 0) {
+            finalDetails = lines[Math.floor(Math.random() * lines.length)];
+        }
+    }
+
     let finalState = state;
     if (stateRandomLines) {
-        const lines = stateRandomLines.split('\n').filter(line => line.trim() !== '');
+        const lines = stateRandomLines.split("\n").filter(line => line.trim() !== '');
         if (lines.length > 0) {
             finalState = lines[Math.floor(Math.random() * lines.length)];
         }
@@ -124,7 +134,7 @@ async function createActivity(): Promise<Activity | undefined> {
         application_id: appID || "0",
         name: appName,
         state: finalState,
-        details,
+        details: finalDetails,
         type: type ?? ActivityType.PLAYING,
         flags: 1 << 0,
     };

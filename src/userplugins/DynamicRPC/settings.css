@@ -29,3 +29,33 @@
 .vc-customRPC-settings-error {
     color: var(--text-feedback-critical);
 }
+
+.vc-customRPC-settings-textarea {
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid var(--input-border-default);
+    border-radius: 4px;
+    color: var(--text-default);
+    font-family: var(--font-primary);
+    font-size: 16px;
+    line-height: 1.375;
+    padding: 10px;
+    resize: vertical;
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    box-sizing: border-box;
+}
+
+.vc-customRPC-settings-textarea:focus {
+    background-color: var(--background-base-lowest);
+    border-color: var(--brand-experiment);
+    outline: none;
+}
+
+.vc-customRPC-settings-textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vc-customRPC-settings-textarea::placeholder {
+    color: var(--text-muted);
+}
