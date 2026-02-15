@@ -216,13 +216,19 @@ export function RPCSettings() {
                 { settingsKey: "appName", label: "Application Name", isValid: makeValidator(128, true) },
             ]} />
 
+            <Divider />
+
             <SingleSetting settingsKey="details" label="Detail (line 1)" isValid={maxLength128} />
             <TextAreaSetting settingsKey="detailsRandomLines" label="Random Detail Lines (one per line)" />
             <SingleSetting settingsKey="detailsURL" label="Detail URL" isValid={isUrlValid} />
 
+            <Divider />
+
             <SingleSetting settingsKey="state" label="State (line 2)" isValid={maxLength128} />
             <TextAreaSetting settingsKey="stateRandomLines" label="Random State Lines (one per line)" />
             <SingleSetting settingsKey="stateURL" label="State URL" isValid={isUrlValid} />
+
+            <Divider />
 
             <SingleSetting
                 settingsKey="streamLink"
