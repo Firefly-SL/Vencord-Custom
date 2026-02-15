@@ -218,14 +218,46 @@ export function RPCSettings() {
 
             <Divider />
 
-            <SingleSetting settingsKey="details" label="Detail (line 1)" isValid={maxLength128} />
-            <TextAreaSetting settingsKey="detailsRandomLines" label="Random Detail Lines (one per line)" />
+            <SingleSetting settingsKey="details" label="Detail (line 1)" isValid={maxLength128} disabled={s.detailsRandomMode !== "disable"} />
+            <TextAreaSetting settingsKey="detailsRandomLines" label="Random Detail Lines (one per line)" disabled={s.detailsRandomMode === "disable"} />
+            <SelectSetting
+                settingsKey="detailsRandomMode"
+                label="Random Detail Mode"
+                options={[
+                    { label: "Disable", value: "disable", default: true },
+                    { label: "Yes (Random)", value: "yes" },
+                    { label: "No (Sequential)", value: "no" }
+                ]}
+            />
+            <SingleSetting
+                settingsKey="detailsRandomInterval"
+                label="Detail Rotation Interval (seconds)"
+                transform={parseNumber}
+                isValid={isNumberValid}
+                disabled={s.detailsRandomMode === "disable"}
+            />
             <SingleSetting settingsKey="detailsURL" label="Detail URL" isValid={isUrlValid} />
 
             <Divider />
 
-            <SingleSetting settingsKey="state" label="State (line 2)" isValid={maxLength128} />
-            <TextAreaSetting settingsKey="stateRandomLines" label="Random State Lines (one per line)" />
+            <SingleSetting settingsKey="state" label="State (line 2)" isValid={maxLength128} disabled={s.stateRandomMode !== "disable"} />
+            <TextAreaSetting settingsKey="stateRandomLines" label="Random State Lines (one per line)" disabled={s.stateRandomMode === "disable"} />
+            <SelectSetting
+                settingsKey="stateRandomMode"
+                label="Random State Mode"
+                options={[
+                    { label: "Disable", value: "disable", default: true },
+                    { label: "Yes (Random)", value: "yes" },
+                    { label: "No (Sequential)", value: "no" }
+                ]}
+            />
+            <SingleSetting
+                settingsKey="stateRandomInterval"
+                label="State Rotation Interval (seconds)"
+                transform={parseNumber}
+                isValid={isNumberValid}
+                disabled={s.stateRandomMode === "disable"}
+            />
             <SingleSetting settingsKey="stateURL" label="State URL" isValid={isUrlValid} />
 
             <Divider />

@@ -40,6 +40,70 @@ const ActivityView = findComponentByCodeLazy(".party?(0", "USER_PROFILE_ACTIVITY
 
 const ShowCurrentGame = getUserSettingLazy<boolean>("status", "showCurrentGame")!;
 
+// Track current line indices and intervals for rotation
+let detailsCurrentIndex = 0;
+let stateCurrentIndex = 0;
+let detailsIntervalId: ReturnType<typeof setInterval> | null = null;
+let stateIntervalId: ReturnType<typeof setInterval> | null = null;
+let lastDetailsLines: string[] = [];
+let lastStateLines: string[] = [];
+
+// Track initial timestamp for NOW mode to prevent resets
+let nowModeStartTime: number | null = null;
+
+function clearRotationIntervals() {
+    if (detailsIntervalId) {
+        clearInterval(detailsIntervalId);
+        detailsIntervalId = null;
+    }
+    if (stateIntervalId) {
+        clearInterval(stateIntervalId);
+        stateIntervalId = null;
+    }
+}
+
+function setupRotationIntervals() {
+    clearRotationIntervals();
+    
+    const { detailsRandomMode, detailsRandomInterval, detailsRandomLines, stateRandomMode, stateRandomInterval, stateRandomLines } = settings.store;
+    
+    // Setup Details rotation
+    if (detailsRandomMode && detailsRandomMode !== "disable" && detailsRandomLines && detailsRandomInterval && detailsRandomInterval > 0) {
+        const lines = detailsRandomLines.split('\n').filter(line => line.trim() !== '');
+        if (lines.length > 1) {
+            lastDetailsLines = lines;
+            detailsIntervalId = setInterval(() => {
+                if (detailsRandomMode === "yes") {
+                    // Random mode
+                    detailsCurrentIndex = Math.floor(Math.random() * lines.length);
+                } else {
+                    // Sequential mode
+                    detailsCurrentIndex = (detailsCurrentIndex + 1) % lines.length;
+                }
+                setRpc();
+            }, detailsRandomInterval * 1000);
+        }
+    }
+    
+    // Setup State rotation
+    if (stateRandomMode && stateRandomMode !== "disable" && stateRandomLines && stateRandomInterval && stateRandomInterval > 0) {
+        const lines = stateRandomLines.split('\n').filter(line => line.trim() !== '');
+        if (lines.length > 1) {
+            lastStateLines = lines;
+            stateIntervalId = setInterval(() => {
+                if (stateRandomMode === "yes") {
+                    // Random mode
+                    stateCurrentIndex = Math.floor(Math.random() * lines.length);
+                } else {
+                    // Sequential mode
+                    stateCurrentIndex = (stateCurrentIndex + 1) % lines.length;
+                }
+                setRpc();
+            }, stateRandomInterval * 1000);
+        }
+    }
+}
+
 async function getApplicationAsset(key: string): Promise<string> {
     return (await ApplicationAssetUtils.fetchAssetIds(settings.store.appID!, [key]))[0];
 }
@@ -61,9 +125,13 @@ export const settings = definePluginSettings({
     appName?: string;
     details?: string;
     detailsRandomLines?: string;
+    detailsRandomMode?: "disable" | "yes" | "no";
+    detailsRandomInterval?: number;
     detailsURL?: string;
     state?: string;
     stateRandomLines?: string;
+    stateRandomMode?: "disable" | "yes" | "no";
+    stateRandomInterval?: number;
     stateURL?: string;
     type?: ActivityType;
     streamLink?: string;
@@ -89,10 +157,12 @@ async function createActivity(): Promise<Activity | undefined> {
         appName,
         details,
         detailsRandomLines,
+        detailsRandomMode,
         detailsURL,
         state,
         stateURL,
         stateRandomLines,
+        stateRandomMode,
         type,
         streamLink,
         startTime,
@@ -115,18 +185,40 @@ async function createActivity(): Promise<Activity | undefined> {
     if (!appName) return;
 
     let finalDetails = details;
-    if (detailsRandomLines) {
-        const lines = detailsRandomLines.split("\n").filter(line => line.trim() !== '');
+    if (detailsRandomMode && detailsRandomMode !== "disable" && detailsRandomLines) {
+        const lines = detailsRandomLines.split('\n').filter(line => line.trim() !== '');
         if (lines.length > 0) {
-            finalDetails = lines[Math.floor(Math.random() * lines.length)];
+            // Use current index for rotation, or reset if lines changed
+            if (lastDetailsLines.length !== lines.length || !lastDetailsLines.every((v, i) => v === lines[i])) {
+                lastDetailsLines = lines;
+                detailsCurrentIndex = 0;
+            }
+            if (detailsRandomMode === "yes") {
+                // Random mode - pick random line
+                finalDetails = lines[Math.floor(Math.random() * lines.length)];
+            } else {
+                // Sequential mode - use current index
+                finalDetails = lines[detailsCurrentIndex % lines.length];
+            }
         }
     }
 
     let finalState = state;
-    if (stateRandomLines) {
-        const lines = stateRandomLines.split("\n").filter(line => line.trim() !== '');
+    if (stateRandomMode && stateRandomMode !== "disable" && stateRandomLines) {
+        const lines = stateRandomLines.split('\n').filter(line => line.trim() !== '');
         if (lines.length > 0) {
-            finalState = lines[Math.floor(Math.random() * lines.length)];
+            // Use current index for rotation, or reset if lines changed
+            if (lastStateLines.length !== lines.length || !lastStateLines.every((v, i) => v === lines[i])) {
+                lastStateLines = lines;
+                stateCurrentIndex = 0;
+            }
+            if (stateRandomMode === "yes") {
+                // Random mode - pick random line
+                finalState = lines[Math.floor(Math.random() * lines.length)];
+            } else {
+                // Sequential mode - use current index
+                finalState = lines[stateCurrentIndex % lines.length];
+            }
         }
     }
 
@@ -143,8 +235,12 @@ async function createActivity(): Promise<Activity | undefined> {
 
     switch (timestampMode) {
         case TimestampMode.NOW:
+            // Use stored start time or initialize it if switching to NOW mode
+            if (!nowModeStartTime) {
+                nowModeStartTime = Date.now();
+            }
             activity.timestamps = {
-                start: Date.now()
+                start: nowModeStartTime
             };
             break;
         case TimestampMode.TIME:
@@ -220,6 +316,13 @@ async function createActivity(): Promise<Activity | undefined> {
 }
 
 export async function setRpc(disable?: boolean) {
+    // Setup rotation intervals when enabling RPC
+    if (!disable) {
+        setupRotationIntervals();
+    } else {
+        clearRotationIntervals();
+    }
+    
     const activity: Activity | undefined = await createActivity();
 
     FluxDispatcher.dispatch({
@@ -238,8 +341,19 @@ export default definePlugin({
     requiresRestart: false,
     settings,
 
-    start: setRpc,
-    stop: () => setRpc(true),
+    start: () => {
+        // Initialize NOW mode timestamp when plugin starts
+        if (settings.store.timestampMode === TimestampMode.NOW) {
+            nowModeStartTime = Date.now();
+        }
+        setupRotationIntervals();
+        setRpc();
+    },
+    stop: () => {
+        clearRotationIntervals();
+        nowModeStartTime = null;
+        setRpc(true);
+    },
 
     // Discord hides buttons on your own Rich Presence for some reason. This patch disables that behaviour
     patches: [
